@@ -5,104 +5,332 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sniff 'n' Scurry</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@700&family=Quicksand:wght@500&family=Roboto+Mono&display=swap');
         
+        :root {
+            --primary-color: #4CAF50;
+            --bg-color: #f0f8ff;
+            --grid-color: #2c3e50;
+            --mouse-color: #ff9ecd;
+            --cheese-color: #ffd700;
+        }
+
         body {
             display: flex;
             flex-direction: column;
             align-items: center;
-            background-color: #f0f0f0;
-            font-family: Arial, sans-serif;
-            margin: 20px;
+            background: var(--bg-color);
+            background: linear-gradient(135deg, var(--bg-color) 0%, #e0f0ff 100%);
+            font-family: 'Quicksand', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            padding: 20px;
         }
+
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            margin-top: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
         #gameBoard {
             display: grid;
             grid-template-columns: repeat(10, 40px);
             grid-template-rows: repeat(10, 40px);
-            gap: 2px;
-            background-color: #ccc;
-            padding: 10px;
-            border-radius: 8px;
+            gap: 3px;
+            background-color: var(--grid-color);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
+
         .cell {
             width: 40px;
             height: 40px;
             background-color: white;
-            border-radius: 4px;
+            border-radius: 8px;
             display: flex;
             justify-content: center;
             align-items: center;
             font-size: 24px;
-            transition: background-color 0.3s;
-        }
-        .wall {
-            background-color: #666;
-        }
-        .hidden {
-            background-color: #333 !important;
-        }
-        .mouse {
-            background-color: #FFB6C1;
-        }
-        .cheese {
-            background-color: #FFD700;
-        }
-        #controls {
-            margin-top: 20px;
-            text-align: center;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            border: none;
-            border-radius: 4px;
-            background-color: #4CAF50;
-            color: white;
-            cursor: pointer;
-            margin: 5px;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        #message {
-            margin-top: 20px;
-            font-size: 18px;
-            color: #333;
-        }
-        #stats {
-            margin: 10px 0;
-            font-size: 18px;
-            font-family: monospace;
-        }
-        h1 {
-            font-family: 'Fredoka', sans-serif;
-            font-size: 64px;
-            color: #333;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-            margin-bottom: 20px;
-            animation: bounceTitle 2s ease-in-out;
+            transition: all 0.3s ease;
         }
 
-        @keyframes bounceTitle {
+        .wall {
+            background-color: var(--grid-color);
+        }
+
+        .hidden {
+            background-color: #34495e !important;
+            transform: scale(0.98);
+        }
+
+        .mouse {
+            background-color: var(--mouse-color);
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(255, 158, 205, 0.4);
+        }
+
+        .cheese {
+            background-color: var(--cheese-color);
+            animation: glow 2s infinite alternate;
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 5px var(--cheese-color); }
+            to { box-shadow: 0 0 15px var(--cheese-color); }
+        }
+
+        #stats {
+            font-size: 18px;
+            color: var(--grid-color);
+            background: white;
+            padding: 20px 25px;
+            border-radius: 12px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            width: calc(40px * 10 + 3px * 9 + 30px);
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Quicksand', sans-serif;
+            position: relative;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            padding: 0 15px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--grid-color);
+        }
+
+        #timer {
+            min-width: 5ch;
+            text-align: center;
+        }
+
+        #bumps, #level {
+            min-width: 2ch;
+            text-align: center;
+        }
+
+        #controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 18px;
+            font-family: 'Quicksand', sans-serif;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:first-child {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        button:last-child {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .title-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 800px;
+            margin: 10px auto 20px;
+            padding: 0 20px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .title-text {
+            font-family: 'Fredoka', sans-serif;
+            font-size: clamp(32px, 8vw, 64px);
+            color: var(--grid-color);
+            text-shadow: 3px 3px 0px rgba(0, 0, 0, 0.1);
+            margin: 0;
+            padding: 5px;
+            text-align: center;
+            line-height: 1.1;
+            width: 100%;
+        }
+
+        .character-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 5px;
+            width: 100%;
+        }
+
+        .mouse-emoji {
+            font-size: clamp(48px, 12vw, 96px);
+            position: relative;
+            display: inline-block;
+            margin: 5px 0;
+            transform-origin: center;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
             0%, 100% { transform: translateY(0); }
-            25% { transform: translateY(-15px); }
-            50% { transform: translateY(0); }
-            75% { transform: translateY(-15px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .speech-bubble {
+            position: relative;
+            background: white;
+            border-radius: 15px;
+            padding: 8px 20px;
+            margin-top: 5px;
+            font-size: clamp(16px, 4vw, 20px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            animation: float 3s ease-in-out infinite;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .speech-bubble::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 0 10px 10px 10px;
+            border-style: solid;
+            border-color: transparent transparent white transparent;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            .game-container {
+                padding: 15px;
+                margin-top: 15px;
+            }
+
+            #gameBoard {
+                transform: scale(0.9);
+                transform-origin: top center;
+            }
+
+            #stats {
+                transform: scale(0.9);
+                transform-origin: top center;
+            }
+
+            .stat-label {
+                font-size: 12px;
+            }
+
+            .stat-value {
+                font-size: 20px;
+            }
+
+            button {
+                padding: 10px 20px;
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            #gameBoard {
+                transform: scale(0.8);
+            }
+
+            #stats {
+                transform: scale(0.8);
+            }
+        }
+
+        .path {
+            background-color: rgba(255, 0, 0, 0.2);
+            position: relative;
+        }
+        
+        .path::after {
+            content: '•';
+            color: rgba(255, 0, 0, 0.5);
+            font-size: 24px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
     </style>
 </head>
 <body>
-    <h1>Sniff 'n' Scurry 🐭</h1>
-    <div id="message">Remember the path and guide the mouse to the cheese!</div>
-    <div id="stats">
-        <span>Time: <span id="timer">0.00</span>s</span>
-        <span style="margin-left: 20px;">Wall Bumps Left: <span id="bumps">10</span></span>
-        <span style="margin-left: 20px;">Level: <span id="level">1</span></span>
+    <div class="title-container">
+        <h1 class="title-text">Sniff 'n' Scurry</h1>
+        <div class="character-container">
+            <span class="mouse-emoji">🐭</span>
+            <div class="speech-bubble">Guide me to the cheese!</div>
+        </div>
     </div>
-    <div id="gameBoard"></div>
-    <div id="controls">
-        <button onclick="startGame()">Start Game</button>
-        <button onclick="resetGame()">Reset Game</button>
+    <div class="game-container">
+        <div id="stats">
+            <div class="stat-item">
+                <div class="stat-label">Time</div>
+                <div class="stat-value"><span id="timer">0.00</span>s</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Wall Bumps Left</div>
+                <div class="stat-value"><span id="bumps">10</span></div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Level</div>
+                <div class="stat-value"><span id="level">1</span></div>
+            </div>
+        </div>
+        <div id="gameBoard"></div>
+        <div id="controls">
+            <button onclick="startGame()">⏱️ Start Timer</button>
+            <button onclick="resetGame()">🔄 Reset Game</button>
+        </div>
     </div>
 
     <script>
@@ -219,7 +447,6 @@
         }
 
         function nextLevel() {
-            // Store the current elapsed time before resetting
             if (gameStarted) {
                 totalTime += (Date.now() - startTime) / 1000;
             }
@@ -239,9 +466,7 @@
             firstMove = false;
             playerPos = { x: 0, y: 0 };
             document.getElementById('bumps').textContent = MAX_WALL_BUMPS;
-            document.getElementById('message').textContent = "Remember the path and guide the mouse to the cheese!";
             
-            // Clear existing timer interval
             if (timerInterval) {
                 clearInterval(timerInterval);
                 timerInterval = null;
@@ -267,7 +492,6 @@
                 startTime = Date.now();
                 if (timerInterval) clearInterval(timerInterval);
                 timerInterval = setInterval(updateTimer, 10);
-                document.getElementById('message').textContent = "Find the cheese!";
                 updateBoard();
             }
         }
@@ -295,7 +519,6 @@
             gameBoard.style.gridTemplateRows = `repeat(${BOARD_SIZE}, 40px)`;
             
             playerPos = { x: 0, y: 0 };
-            document.getElementById('message').textContent = "Remember the path and guide the mouse to the cheese!";
             createBoard();
             generateMaze();
             cheesePos = getRandomFarPosition();
@@ -328,8 +551,6 @@
                 if (wallBumps >= MAX_WALL_BUMPS) {
                     gameOver = true;
                     clearInterval(timerInterval);
-                    document.getElementById('message').textContent = 
-                        `Game Over! You reached Level ${currentLevel}. Final Time: ${document.getElementById('timer').textContent}s`;
                 }
             }
 
@@ -337,25 +558,40 @@
         }
 
         function updateBoard() {
+            let pathCells = new Set();
+            if (gameOver) {
+                const path = findPath(playerPos, cheesePos);
+                if (path) {
+                    path.forEach(pos => {
+                        pathCells.add(`${pos.x}-${pos.y}`);
+                    });
+                }
+            }
+
             for (let y = 0; y < BOARD_SIZE; y++) {
                 for (let x = 0; x < BOARD_SIZE; x++) {
                     const cell = document.getElementById(`cell-${x}-${y}`);
                     cell.className = 'cell';
                     
                     // Only hide cells if game is started and first move has been made
-                    if (gameStarted && firstMove) {
+                    if (gameStarted && firstMove && !gameOver) {
                         cell.classList.add('hidden');
                     } else if (board[y][x] === 'wall') {
                         cell.classList.add('wall');
                     }
 
+                    // Show path cells in game over state
+                    if (gameOver && pathCells.has(`${x}-${y}`)) {
+                        cell.classList.add('path');
+                    }
+
                     if (x === playerPos.x && y === playerPos.y) {
                         cell.classList.remove('hidden');
                         cell.classList.add('mouse');
-                        cell.innerHTML = '🐭';
+                        cell.innerHTML = gameOver ? '💀' : '🐭';
                     } else {
-                        // Show cheese if game hasn't started or if first move hasn't been made
-                        cell.innerHTML = (x === cheesePos.x && y === cheesePos.y && (!gameStarted || !firstMove)) ? '🧀' : '';
+                        // Show cheese if game hasn't started or if first move hasn't been made or game is over
+                        cell.innerHTML = (x === cheesePos.x && y === cheesePos.y && (!gameStarted || !firstMove || gameOver)) ? '🧀' : '';
                     }
                 }
             }
