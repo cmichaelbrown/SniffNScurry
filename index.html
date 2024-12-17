@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sniff 'n' Scurry</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@700&display=swap');
+        
         body {
             display: flex;
             flex-direction: column;
@@ -72,10 +74,25 @@
             font-size: 18px;
             font-family: monospace;
         }
+        h1 {
+            font-family: 'Fredoka', sans-serif;
+            font-size: 64px;
+            color: #333;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+            animation: bounceTitle 2s ease-in-out;
+        }
+
+        @keyframes bounceTitle {
+            0%, 100% { transform: translateY(0); }
+            25% { transform: translateY(-15px); }
+            50% { transform: translateY(0); }
+            75% { transform: translateY(-15px); }
+        }
     </style>
 </head>
 <body>
-    <h1>Sniff 'n' Scurry</h1>
+    <h1>Sniff 'n' Scurry 🐭</h1>
     <div id="message">Remember the path and guide the mouse to the cheese!</div>
     <div id="stats">
         <span>Time: <span id="timer">0.00</span>s</span>
@@ -101,6 +118,7 @@
         let wallBumps = 0;
         let startTime = 0;
         let timerInterval;
+        let totalTime = 0;  // Track total time across levels
         let firstMove = false;
         let currentLevel = 1;
 
@@ -201,8 +219,13 @@
         }
 
         function nextLevel() {
+            // Store the current elapsed time before resetting
+            if (gameStarted) {
+                totalTime += (Date.now() - startTime) / 1000;
+            }
+            
             currentLevel++;
-            gameStarted = false; // Reset game started state for new level
+            gameStarted = false;
             BOARD_SIZE = Math.min(20, 10 + Math.floor(currentLevel / 2)); // Increase board size every 2 levels, max 20
             document.getElementById('level').textContent = currentLevel;
             
@@ -217,7 +240,12 @@
             playerPos = { x: 0, y: 0 };
             document.getElementById('bumps').textContent = MAX_WALL_BUMPS;
             document.getElementById('message').textContent = "Remember the path and guide the mouse to the cheese!";
-            if (timerInterval) clearInterval(timerInterval);
+            
+            // Clear existing timer interval
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
             
             createBoard();
             generateMaze();
@@ -227,7 +255,8 @@
 
         function updateTimer() {
             if (gameStarted && !gameOver) {
-                const elapsed = (Date.now() - startTime) / 1000;
+                const currentTime = Date.now();
+                const elapsed = ((currentTime - startTime) / 1000) + totalTime;
                 document.getElementById('timer').textContent = elapsed.toFixed(2);
             }
         }
@@ -235,10 +264,9 @@
         function startGame() {
             if (!gameStarted && !gameOver) {
                 gameStarted = true;
-                if (!timerInterval) { // Only start timer if it's not already running
-                    startTime = Date.now();
-                    timerInterval = setInterval(updateTimer, 10);
-                }
+                startTime = Date.now();
+                if (timerInterval) clearInterval(timerInterval);
+                timerInterval = setInterval(updateTimer, 10);
                 document.getElementById('message').textContent = "Find the cheese!";
                 updateBoard();
             }
@@ -251,10 +279,15 @@
             wallBumps = 0;
             currentLevel = 1;
             BOARD_SIZE = 10;
+            totalTime = 0;  // Reset total time
             document.getElementById('bumps').textContent = MAX_WALL_BUMPS;
             document.getElementById('timer').textContent = '0.00';
             document.getElementById('level').textContent = currentLevel;
-            if (timerInterval) clearInterval(timerInterval);
+            
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
             
             // Reset grid size
             const gameBoard = document.getElementById('gameBoard');
