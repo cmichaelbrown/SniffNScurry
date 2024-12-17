@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sniff 'n' Scurry</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #gameBoard {
+            display: grid;
+            grid-template-columns: repeat(10, 40px);
+            grid-template-rows: repeat(10, 40px);
+            gap: 2px;
+            background-color: #ccc;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .cell {
+            width: 40px;
+            height: 40px;
+            background-color: white;
+            border-radius: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            transition: background-color 0.3s;
+        }
+        .wall {
+            background-color: #666;
+        }
+        .hidden {
+            background-color: #333 !important;
+        }
+        .mouse {
+            background-color: #FFB6C1;
+        }
+        .cheese {
+            background-color: #FFD700;
+        }
+        #controls {
+            margin-top: 20px;
+            text-align: center;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #message {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #333;
+        }
+        #stats {
+            margin: 10px 0;
+            font-size: 18px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sniff 'n' Scurry</h1>
+    <div id="message">Remember the path and guide the mouse to the cheese!</div>
+    <div id="stats">
+        <span>Time: <span id="timer">0.00</span>s</span>
+        <span style="margin-left: 20px;">Wall Bumps Left: <span id="bumps">10</span></span>
+        <span style="margin-left: 20px;">Level: <span id="level">1</span></span>
+    </div>
+    <div id="gameBoard"></div>
+    <div id="controls">
+        <button onclick="startGame()">Start Game</button>
+        <button onclick="resetGame()">Reset Game</button>
+    </div>
+
+    <script>
+        const MAX_WALL_BUMPS = 10;
+        const MIN_CHEESE_DISTANCE = 15;
+        let BOARD_SIZE = 10;
+        let board = [];
+        let currentPath = [];
+        let playerPos = { x: 0, y: 0 };
+        let cheesePos = { x: 9, y: 9 };
+        let gameStarted = false;
+        let gameOver = false;
+        let wallBumps = 0;
+        let startTime = 0;
+        let timerInterval;
+        let firstMove = false;
+        let currentLevel = 1;
+
+        function createBoard() {
+            const gameBoard = document.getElementById('gameBoard');
+            gameBoard.innerHTML = '';
+            board = [];
+
+            for (let y = 0; y < BOARD_SIZE; y++) {
+                board[y] = [];
+                for (let x = 0; x < BOARD_SIZE; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.id = `cell-${x}-${y}`;
+                    gameBoard.appendChild(cell);
+                    board[y][x] = 'empty';
+                }
+            }
+        }
+
+        function generateMaze() {
+            // Place walls randomly
+            for (let i = 0; i < BOARD_SIZE * BOARD_SIZE / 4; i++) {
+                const x = Math.floor(Math.random() * BOARD_SIZE);
+                const y = Math.floor(Math.random() * BOARD_SIZE);
+                if ((x !== 0 || y !== 0) && (x !== 9 || y !== 9)) {
+                    board[y][x] = 'wall';
+                }
+            }
+
+            // Generate a valid path
+            currentPath = findPath(playerPos, cheesePos);
+            if (!currentPath) {
+                // If no path found, regenerate maze
+                createBoard();
+                generateMaze();
+                return;
+            }
+
+            // Show the path initially
+            currentPath.forEach(pos => {
+                if (board[pos.y][pos.x] !== 'wall') {
+                    board[pos.y][pos.x] = 'path';
+                }
+            });
+        }
+
+        function findPath(start, end) {
+            const queue = [[start]];
+            const visited = new Set();
+
+            while (queue.length > 0) {
+                const path = queue.shift();
+                const pos = path[path.length - 1];
+
+                if (pos.x === end.x && pos.y === end.y) {
+                    return path;
+                }
+
+                const directions = [
+                    { x: 0, y: 1 }, { x: 1, y: 0 },
+                    { x: 0, y: -1 }, { x: -1, y: 0 }
+                ];
+
+                for (const dir of directions) {
+                    const newX = pos.x + dir.x;
+                    const newY = pos.y + dir.y;
+
+                    if (isValidMove(newX, newY) && !visited.has(`${newX},${newY}`)) {
+                        visited.add(`${newX},${newY}`);
+                        queue.push([...path, { x: newX, y: newY }]);
+                    }
+                }
+            }
+            return null;
+        }
+
+        function isValidMove(x, y) {
+            return x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE && board[y][x] !== 'wall';
+        }
+
+        function getRandomFarPosition() {
+            // Generate positions that are at least MIN_CHEESE_DISTANCE steps away from start
+            let validPositions = [];
+            for (let y = 0; y < BOARD_SIZE; y++) {
+                for (let x = 0; x < BOARD_SIZE; x++) {
+                    let distance = Math.abs(x - playerPos.x) + Math.abs(y - playerPos.y);
+                    if (distance >= MIN_CHEESE_DISTANCE && board[y][x] !== 'wall') {
+                        validPositions.push({x, y});
+                    }
+                }
+            }
+            if (validPositions.length === 0) {
+                // If no position is far enough, place it in the furthest corner
+                return { x: BOARD_SIZE - 1, y: BOARD_SIZE - 1 };
+            }
+            return validPositions[Math.floor(Math.random() * validPositions.length)];
+        }
+
+        function nextLevel() {
+            currentLevel++;
+            gameStarted = false; // Reset game started state for new level
+            BOARD_SIZE = Math.min(20, 10 + Math.floor(currentLevel / 2)); // Increase board size every 2 levels, max 20
+            document.getElementById('level').textContent = currentLevel;
+            
+            // Update grid CSS
+            const gameBoard = document.getElementById('gameBoard');
+            gameBoard.style.gridTemplateColumns = `repeat(${BOARD_SIZE}, 40px)`;
+            gameBoard.style.gridTemplateRows = `repeat(${BOARD_SIZE}, 40px)`;
+            
+            // Reset for next level
+            wallBumps = 0;
+            firstMove = false;
+            playerPos = { x: 0, y: 0 };
+            document.getElementById('bumps').textContent = MAX_WALL_BUMPS;
+            document.getElementById('message').textContent = "Remember the path and guide the mouse to the cheese!";
+            if (timerInterval) clearInterval(timerInterval);
+            
+            createBoard();
+            generateMaze();
+            cheesePos = getRandomFarPosition();
+            updateBoard();
+        }
+
+        function updateTimer() {
+            if (gameStarted && !gameOver) {
+                const elapsed = (Date.now() - startTime) / 1000;
+                document.getElementById('timer').textContent = elapsed.toFixed(2);
+            }
+        }
+
+        function startGame() {
+            if (!gameStarted && !gameOver) {
+                gameStarted = true;
+                if (!timerInterval) { // Only start timer if it's not already running
+                    startTime = Date.now();
+                    timerInterval = setInterval(updateTimer, 10);
+                }
+                document.getElementById('message').textContent = "Find the cheese!";
+                updateBoard();
+            }
+        }
+
+        function resetGame() {
+            gameStarted = false;
+            gameOver = false;
+            firstMove = false;
+            wallBumps = 0;
+            currentLevel = 1;
+            BOARD_SIZE = 10;
+            document.getElementById('bumps').textContent = MAX_WALL_BUMPS;
+            document.getElementById('timer').textContent = '0.00';
+            document.getElementById('level').textContent = currentLevel;
+            if (timerInterval) clearInterval(timerInterval);
+            
+            // Reset grid size
+            const gameBoard = document.getElementById('gameBoard');
+            gameBoard.style.gridTemplateColumns = `repeat(${BOARD_SIZE}, 40px)`;
+            gameBoard.style.gridTemplateRows = `repeat(${BOARD_SIZE}, 40px)`;
+            
+            playerPos = { x: 0, y: 0 };
+            document.getElementById('message').textContent = "Remember the path and guide the mouse to the cheese!";
+            createBoard();
+            generateMaze();
+            cheesePos = getRandomFarPosition();
+            updateBoard();
+        }
+
+        function movePlayer(dx, dy) {
+            if (!gameStarted || gameOver) return;
+
+            const newX = playerPos.x + dx;
+            const newY = playerPos.y + dy;
+
+            if (!firstMove && isValidMove(newX, newY)) {
+                firstMove = true;
+                updateBoard();
+            }
+
+            if (isValidMove(newX, newY)) {
+                playerPos.x = newX;
+                playerPos.y = newY;
+
+                if (playerPos.x === cheesePos.x && playerPos.y === cheesePos.y) {
+                    nextLevel();
+                }
+            } else if (newX >= 0 && newX < BOARD_SIZE && newY >= 0 && newY < BOARD_SIZE) {
+                wallBumps++;
+                const remainingBumps = MAX_WALL_BUMPS - wallBumps;
+                document.getElementById('bumps').textContent = remainingBumps;
+                
+                if (wallBumps >= MAX_WALL_BUMPS) {
+                    gameOver = true;
+                    clearInterval(timerInterval);
+                    document.getElementById('message').textContent = 
+                        `Game Over! You reached Level ${currentLevel}. Final Time: ${document.getElementById('timer').textContent}s`;
+                }
+            }
+
+            updateBoard();
+        }
+
+        function updateBoard() {
+            for (let y = 0; y < BOARD_SIZE; y++) {
+                for (let x = 0; x < BOARD_SIZE; x++) {
+                    const cell = document.getElementById(`cell-${x}-${y}`);
+                    cell.className = 'cell';
+                    
+                    // Only hide cells if game is started and first move has been made
+                    if (gameStarted && firstMove) {
+                        cell.classList.add('hidden');
+                    } else if (board[y][x] === 'wall') {
+                        cell.classList.add('wall');
+                    }
+
+                    if (x === playerPos.x && y === playerPos.y) {
+                        cell.classList.remove('hidden');
+                        cell.classList.add('mouse');
+                        cell.innerHTML = '🐭';
+                    } else {
+                        // Show cheese if game hasn't started or if first move hasn't been made
+                        cell.innerHTML = (x === cheesePos.x && y === cheesePos.y && (!gameStarted || !firstMove)) ? '🧀' : '';
+                    }
+                }
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowUp': movePlayer(0, -1); break;
+                case 'ArrowDown': movePlayer(0, 1); break;
+                case 'ArrowLeft': movePlayer(-1, 0); break;
+                case 'ArrowRight': movePlayer(1, 0); break;
+            }
+        });
+
+        // Initialize the game
+        resetGame();
+    </script>
+</body>
+</html>
