@@ -24,7 +24,22 @@
             font-family: 'Quicksand', sans-serif;
             margin: 0;
             min-height: 100vh;
-            padding: 20px;
+            padding: 10px;
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        .title-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 800px;
+            margin: 10px auto 20px;
+            padding: 0 10px;
+            box-sizing: border-box;
+            text-align: center;
         }
 
         .game-container {
@@ -32,11 +47,14 @@
             flex-direction: column;
             align-items: center;
             gap: 20px;
-            margin-top: 10px;
+            margin: 10px auto;
             background: rgba(255, 255, 255, 0.9);
-            padding: 25px;
+            padding: 20px;
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            width: fit-content;
+            max-width: 100%;
+            box-sizing: border-box;
         }
 
         #gameBoard {
@@ -48,43 +66,8 @@
             padding: 15px;
             border-radius: 15px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .cell {
-            width: 40px;
-            height: 40px;
-            background-color: white;
-            border-radius: 8px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 24px;
-            transition: all 0.3s ease;
-        }
-
-        .wall {
-            background-color: var(--grid-color);
-        }
-
-        .hidden {
-            background-color: #34495e !important;
-            transform: scale(0.98);
-        }
-
-        .mouse {
-            background-color: var(--mouse-color);
-            transform: scale(1.05);
-            box-shadow: 0 2px 8px rgba(255, 158, 205, 0.4);
-        }
-
-        .cheese {
-            background-color: var(--cheese-color);
-            animation: glow 2s infinite alternate;
-        }
-
-        @keyframes glow {
-            from { box-shadow: 0 0 5px var(--cheese-color); }
-            to { box-shadow: 0 0 15px var(--cheese-color); }
+            max-width: 100%;
+            box-sizing: border-box;
         }
 
         #stats {
@@ -94,11 +77,13 @@
             padding: 20px 25px;
             border-radius: 12px;
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-            width: calc(40px * 10 + 3px * 9 + 30px);
+            width: 100%;
+            max-width: calc(40px * 10 + 3px * 9 + 30px);
             display: flex;
             justify-content: space-between;
             font-family: 'Quicksand', sans-serif;
             position: relative;
+            box-sizing: border-box;
         }
 
         .stat-item {
@@ -172,19 +157,6 @@
             transform: translateY(0);
         }
 
-        .title-container {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            max-width: 800px;
-            margin: 10px auto 20px;
-            padding: 0 20px;
-            box-sizing: border-box;
-            text-align: center;
-        }
-
         .title-text {
             font-family: 'Fredoka', sans-serif;
             font-size: clamp(32px, 8vw, 64px);
@@ -245,20 +217,26 @@
 
         @media (max-width: 600px) {
             body {
-                padding: 10px;
+                padding: 5px;
+            }
+
+            .title-container {
+                margin: 5px auto 10px;
             }
 
             .game-container {
-                padding: 15px;
-                margin-top: 15px;
+                padding: 15px 10px;
+                gap: 15px;
             }
 
             #gameBoard {
                 transform: scale(0.9);
                 transform-origin: top center;
+                margin: 0 auto;
             }
 
             #stats {
+                padding: 15px;
                 transform: scale(0.9);
                 transform-origin: top center;
             }
@@ -268,23 +246,78 @@
             }
 
             .stat-value {
-                font-size: 20px;
+                font-size: 18px;
             }
 
             button {
-                padding: 10px 20px;
+                padding: 10px 15px;
                 font-size: 16px;
             }
         }
 
         @media (max-width: 400px) {
+            .game-container {
+                padding: 10px 5px;
+            }
+
             #gameBoard {
                 transform: scale(0.8);
+                margin: 0 auto;
             }
 
             #stats {
                 transform: scale(0.8);
             }
+
+            .title-text {
+                font-size: clamp(28px, 7vw, 32px);
+            }
+
+            .mouse-emoji {
+                font-size: clamp(40px, 10vw, 48px);
+            }
+
+            .speech-bubble {
+                font-size: clamp(14px, 3.5vw, 16px);
+                padding: 6px 15px;
+            }
+        }
+
+        .cell {
+            width: 40px;
+            height: 40px;
+            background-color: white;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .wall {
+            background-color: var(--grid-color);
+        }
+
+        .hidden {
+            background-color: #34495e !important;
+            transform: scale(0.98);
+        }
+
+        .mouse {
+            background-color: var(--mouse-color);
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(255, 158, 205, 0.4);
+        }
+
+        .cheese {
+            background-color: var(--cheese-color);
+            animation: glow 2s infinite alternate;
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 5px var(--cheese-color); }
+            to { box-shadow: 0 0 15px var(--cheese-color); }
         }
 
         .path {
