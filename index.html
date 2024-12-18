@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sniff 'n' Scurry</title>
+    <title>Sniff 'n Scurry</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@700&family=Quicksand:wght@500&family=Roboto+Mono&display=swap');
         
@@ -395,7 +395,7 @@
 </head>
 <body>
     <div class="title-container">
-        <h1 class="title-text">Sniff 'n' Scurry</h1>
+        <h1 class="title-text">Sniff 'n Scurry</h1>
         <div class="character-container">
             <span class="mouse-emoji">🐭</span>
             <div class="speech-bubble">Guide me to the cheese!</div>
@@ -474,26 +474,19 @@
             for (let i = 0; i < BOARD_SIZE * BOARD_SIZE / 4; i++) {
                 const x = Math.floor(Math.random() * BOARD_SIZE);
                 const y = Math.floor(Math.random() * BOARD_SIZE);
-                if ((x !== 0 || y !== 0) && (x !== 9 || y !== 9)) {
+                if ((x !== 0 || y !== 0) && (x !== cheesePos.x || y !== cheesePos.y)) {
                     board[y][x] = 'wall';
                 }
             }
 
             // Generate a valid path
-            currentPath = findPath(playerPos, cheesePos);
-            if (!currentPath) {
+            const path = findPath(playerPos, cheesePos);
+            if (!path) {
                 // If no path found, regenerate maze
                 createBoard();
                 generateMaze();
                 return;
             }
-
-            // Show the path initially
-            currentPath.forEach(pos => {
-                if (board[pos.y][pos.x] !== 'wall') {
-                    board[pos.y][pos.x] = 'path';
-                }
-            });
         }
 
         function findPath(start, end) {
@@ -549,33 +542,44 @@
         }
 
         function nextLevel() {
-            if (gameStarted) {
-                totalTime += (Date.now() - startTime) / 1000;
-            }
-            
             currentLevel++;
-            gameStarted = false;
-            BOARD_SIZE = Math.min(20, 10 + Math.floor(currentLevel / 2)); // Increase board size every 2 levels, max 20
+            BOARD_SIZE = Math.min(BOARD_SIZE + 2, 20);
             document.getElementById('level').textContent = currentLevel;
             
-            // Update grid CSS
+            // Reset cat for new level
+            moveCount = 0;
+            catActive = false;
+            if (catInterval) {
+                clearInterval(catInterval);
+                catInterval = null;
+            }
+            catPos = null;
+
+            // Reset wall bumps
+            wallBumps = 0;
+            document.getElementById('bumps').textContent = MAX_WALL_BUMPS;
+
+            // Reset board and positions
+            gameStarted = true;  // Keep game started
+            firstMove = false;   // Reset first move for new level
+            playerPos = { x: 0, y: 0 }; // Ensure mouse starts at top-left
+            
+            // Update grid CSS to maintain square shape
             const gameBoard = document.getElementById('gameBoard');
             gameBoard.style.gridTemplateColumns = `repeat(${BOARD_SIZE}, 40px)`;
             gameBoard.style.gridTemplateRows = `repeat(${BOARD_SIZE}, 40px)`;
             
-            // Reset for next level
-            wallBumps = 0;
-            firstMove = false;
-            playerPos = { x: 0, y: 0 };
-            document.getElementById('bumps').textContent = MAX_WALL_BUMPS;
-            
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
-            }
-            
             createBoard();
+            cheesePos = getRandomFarPosition();
             generateMaze();
+            updateBoard();
+        }
+
+        function placeCheeseAndMouse() {
+            // Always start mouse at top-left
+            playerPos = { x: 0, y: 0 };
+            
+            // Place cheese far from start
             cheesePos = getRandomFarPosition();
             updateBoard();
         }
@@ -621,33 +625,45 @@
         }
 
         function resetGame() {
+            // Reset game state
             gameStarted = false;
             gameOver = false;
             firstMove = false;
-            wallBumps = 0;
-            totalTime = 0;
             currentLevel = 1;
-            BOARD_SIZE = 10;
-            moveCount = 0;
-            catActive = false;
-            catPos = null;
-            if (catInterval) {
-                clearInterval(catInterval);
-            }
-            clearInterval(timerInterval);
-            document.getElementById('timer').textContent = timerEnabled ? '0.00s' : '∞';
-            document.getElementById('bumps').textContent = MAX_WALL_BUMPS;
+            BOARD_SIZE = 10; // Reset to initial size
             document.getElementById('level').textContent = currentLevel;
             
-            // Reset grid size
+            // Reset timer
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            document.getElementById('timer').textContent = timerEnabled ? '0.00s' : '∞';
+            totalTime = 0;
+            startTime = null;
+            
+            // Reset cat
+            moveCount = 0;
+            catActive = false;
+            if (catInterval) {
+                clearInterval(catInterval);
+                catInterval = null;
+            }
+            catPos = null;
+            
+            // Reset wall bumps
+            wallBumps = 0;
+            document.getElementById('bumps').textContent = MAX_WALL_BUMPS;
+            
+            // Reset board and positions
             const gameBoard = document.getElementById('gameBoard');
             gameBoard.style.gridTemplateColumns = `repeat(${BOARD_SIZE}, 40px)`;
             gameBoard.style.gridTemplateRows = `repeat(${BOARD_SIZE}, 40px)`;
             
-            playerPos = { x: 0, y: 0 };
             createBoard();
-            generateMaze();
+            playerPos = { x: 0, y: 0 };
             cheesePos = getRandomFarPosition();
+            generateMaze();
             updateBoard();
         }
 
