@@ -13,6 +13,8 @@
             --grid-color: #2c3e50;
             --mouse-color: #ff9ecd;
             --cheese-color: #ffd700;
+            --start-button-color: #ffa726;
+            --reset-button-color: #42a5f5;
         }
 
         body {
@@ -136,25 +138,27 @@
             transition: all 0.3s ease;
             text-transform: uppercase;
             letter-spacing: 1px;
+            color: white;
         }
 
         button:first-child {
-            background-color: var(--primary-color);
-            color: white;
+            background-color: var(--start-button-color);
+            box-shadow: 0 4px 15px rgba(255, 167, 38, 0.3);
         }
 
         button:last-child {
-            background-color: #e74c3c;
-            color: white;
+            background-color: var(--reset-button-color);
+            box-shadow: 0 4px 15px rgba(66, 165, 245, 0.3);
         }
 
         button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            filter: brightness(1.1);
         }
 
         button:active {
             transform: translateY(0);
+            filter: brightness(0.95);
         }
 
         .title-text {
@@ -334,6 +338,59 @@
             left: 50%;
             transform: translate(-50%, -50%);
         }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+            font-size: 16px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--primary-color);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
     </style>
 </head>
 <body>
@@ -348,7 +405,7 @@
         <div id="stats">
             <div class="stat-item">
                 <div class="stat-label">Time</div>
-                <div class="stat-value"><span id="timer">0.00</span>s</div>
+                <div class="stat-value"><span id="timer">0.00s</span></div>
             </div>
             <div class="stat-item">
                 <div class="stat-label">Wall Bumps Left</div>
@@ -361,8 +418,15 @@
         </div>
         <div id="gameBoard"></div>
         <div id="controls">
-            <button onclick="startGame()">⏱️ Start Timer</button>
+            <button onclick="startGame()">⚡ Start</button>
             <button onclick="resetGame()">🔄 Reset Game</button>
+        </div>
+        <div class="toggle-container">
+            <label class="toggle-switch">
+                <input type="checkbox" id="timerToggle" checked onchange="toggleTimer()">
+                <span class="toggle-slider"></span>
+            </label>
+            <span>Enable Timer</span>
         </div>
     </div>
 
@@ -382,6 +446,11 @@
         let totalTime = 0;  // Track total time across levels
         let firstMove = false;
         let currentLevel = 1;
+        let timerEnabled = true;
+        let moveCount = 0;
+        let catPos = null;
+        let catInterval = null;
+        let catActive = false;
 
         function createBoard() {
             const gameBoard = document.getElementById('gameBoard');
@@ -511,11 +580,32 @@
             updateBoard();
         }
 
-        function updateTimer() {
+        function toggleTimer() {
+            timerEnabled = document.getElementById('timerToggle').checked;
+            if (!gameStarted) {
+                document.getElementById('timer').textContent = timerEnabled ? '0.00s' : '∞';
+            } else {
+                updateTimer();
+            }
+            
             if (gameStarted && !gameOver) {
-                const currentTime = Date.now();
-                const elapsed = ((currentTime - startTime) / 1000) + totalTime;
-                document.getElementById('timer').textContent = elapsed.toFixed(2);
+                if (timerEnabled) {
+                    timerInterval = setInterval(updateTimer, 10);
+                } else {
+                    clearInterval(timerInterval);
+                    document.getElementById('timer').textContent = '∞';
+                }
+            }
+        }
+
+        function updateTimer() {
+            if (!gameStarted) return;
+            
+            if (timerEnabled) {
+                totalTime += 0.01;
+                document.getElementById('timer').textContent = totalTime.toFixed(2) + 's';
+            } else {
+                document.getElementById('timer').textContent = '∞';
             }
         }
 
@@ -523,8 +613,9 @@
             if (!gameStarted && !gameOver) {
                 gameStarted = true;
                 startTime = Date.now();
-                if (timerInterval) clearInterval(timerInterval);
-                timerInterval = setInterval(updateTimer, 10);
+                if (timerEnabled) {
+                    timerInterval = setInterval(updateTimer, 10);
+                }
                 updateBoard();
             }
         }
@@ -534,17 +625,19 @@
             gameOver = false;
             firstMove = false;
             wallBumps = 0;
+            totalTime = 0;
             currentLevel = 1;
             BOARD_SIZE = 10;
-            totalTime = 0;  // Reset total time
-            document.getElementById('bumps').textContent = MAX_WALL_BUMPS;
-            document.getElementById('timer').textContent = '0.00';
-            document.getElementById('level').textContent = currentLevel;
-            
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
+            moveCount = 0;
+            catActive = false;
+            catPos = null;
+            if (catInterval) {
+                clearInterval(catInterval);
             }
+            clearInterval(timerInterval);
+            document.getElementById('timer').textContent = timerEnabled ? '0.00s' : '∞';
+            document.getElementById('bumps').textContent = MAX_WALL_BUMPS;
+            document.getElementById('level').textContent = currentLevel;
             
             // Reset grid size
             const gameBoard = document.getElementById('gameBoard');
@@ -555,6 +648,36 @@
             createBoard();
             generateMaze();
             cheesePos = getRandomFarPosition();
+            updateBoard();
+        }
+
+        function startCatChase() {
+            if (catActive) return;
+            catActive = true;
+            catPos = { x: 0, y: 0 }; // Start from top-left corner
+            updateBoard();
+            catInterval = setInterval(moveCat, 1250);
+        }
+
+        function moveCat() {
+            if (!catActive || gameOver) {
+                clearInterval(catInterval);
+                return;
+            }
+
+            // Find path to mouse using existing findPath function
+            const path = findPath(catPos, playerPos);
+            if (path && path.length > 1) {
+                // Move one step towards the mouse
+                catPos = path[1]; // path[0] is current position, path[1] is next step
+                
+                // Check if cat caught the mouse
+                if (catPos.x === playerPos.x && catPos.y === playerPos.y) {
+                    gameOver = true;
+                    clearInterval(timerInterval);
+                    clearInterval(catInterval);
+                }
+            }
             updateBoard();
         }
 
@@ -572,6 +695,19 @@
             if (isValidMove(newX, newY)) {
                 playerPos.x = newX;
                 playerPos.y = newY;
+                moveCount++;
+
+                // Start cat chase after 5 moves
+                if (moveCount === 5) {
+                    startCatChase();
+                }
+
+                // Check if cat is on same square
+                if (catActive && catPos && catPos.x === playerPos.x && catPos.y === playerPos.y) {
+                    gameOver = true;
+                    clearInterval(timerInterval);
+                    clearInterval(catInterval);
+                }
 
                 if (playerPos.x === cheesePos.x && playerPos.y === cheesePos.y) {
                     nextLevel();
@@ -584,6 +720,7 @@
                 if (wallBumps >= MAX_WALL_BUMPS) {
                     gameOver = true;
                     clearInterval(timerInterval);
+                    clearInterval(catInterval);
                 }
             }
 
@@ -606,25 +743,30 @@
                     const cell = document.getElementById(`cell-${x}-${y}`);
                     cell.className = 'cell';
                     
-                    // Only hide cells if game is started and first move has been made
                     if (gameStarted && firstMove && !gameOver) {
                         cell.classList.add('hidden');
                     } else if (board[y][x] === 'wall') {
                         cell.classList.add('wall');
                     }
 
-                    // Show path cells in game over state
                     if (gameOver && pathCells.has(`${x}-${y}`)) {
                         cell.classList.add('path');
                     }
 
+                    // Clear any existing content
+                    cell.innerHTML = '';
+
+                    // Add game elements in order: cat, mouse, cheese
+                    if (catActive && catPos && x === catPos.x && y === catPos.y) {
+                        cell.innerHTML = '🐱';
+                        cell.classList.remove('hidden');
+                    }
                     if (x === playerPos.x && y === playerPos.y) {
                         cell.classList.remove('hidden');
                         cell.classList.add('mouse');
                         cell.innerHTML = gameOver ? '💀' : '🐭';
-                    } else {
-                        // Show cheese if game hasn't started or if first move hasn't been made or game is over
-                        cell.innerHTML = (x === cheesePos.x && y === cheesePos.y && (!gameStarted || !firstMove || gameOver)) ? '🧀' : '';
+                    } else if (x === cheesePos.x && y === cheesePos.y && (!gameStarted || !firstMove || gameOver)) {
+                        cell.innerHTML = '🧀';
                     }
                 }
             }
